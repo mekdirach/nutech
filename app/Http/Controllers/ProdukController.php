@@ -2,28 +2,29 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\LaporanProduk;
+use App\Jobs\ExportJob;
+use App\Models\produk;
 use Carbon\Carbon;
+use Illuminate\Contracts\Session\Session;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 class ProdukController extends Controller
 {
     public function index()
     {
-        return view('produk.index');
+        $pemda = produk::all();
+        return view('produk.index', compact('pemda'));
     }
 
     public function list(Request $request)
     {
-
-        $query = DB::table('produk')
-            ->select('id', 'nama_produk', 'harga_barang', 'harga_jual', 'stok', 'created_at') // Sertakan 'created_at' dalam select
-            ->orderBy('created_at', 'desc')
-            ->skip($request->start)
-            ->take($request->length);
-
-        dd($query);
-
+        Log::info('Metode list dipanggil');
+        $query      = produk::orderBy('created_at', 'asc');
         if ($request->keyword) {
             $search = $request->keyword;
             $query->where(function ($query) use ($search) {
@@ -35,52 +36,47 @@ class ProdukController extends Controller
             $query->where('kategori_produk', $request->produk);
         }
 
-        $result     = $query->get();
         $resCount   = $query->count();
+        $result    = $query->skip($request->start)->take($request->length)->get();
         $no         = $request->start;
 
         foreach ($result as $row) {
-            $row->id        = $row->mp_p_id;
+            $row->id        = $row->id;
             $row->rownum    = ++$no;
         }
-
         $response = [
             "draw"              => $request->draw,
             "recordsTotal"      => $resCount,
             "recordsFiltered"   => $resCount,
             "data"              => $result
         ];
+
         return response()->json($response);
     }
 
     public function create(Request $request)
     {
+        Log::info('Metode create dipanggil');
         $request->validate([
-            'name_pemda' => 'required|string',
+            'name' => 'required|string',
+            'kategori' => 'required|string',
+            'harga_barang' => 'required|numeric',
+            'stok' => 'required|integer',
         ]);
-        $namakota = $request->input('name_kota');
-        $namakotaUpper = strtoupper($namakota);
-
-        $mp_mkk_nama = DB::table('mp_master_kota_kabupaten')
-            ->where('mp_mkk_nama', 'ilike', "%$namakotaUpper%")
-            ->value('mp_mkk_kode');
-
+        $harga_beli = $request->input('harga_barang');
+        $harga_jual = $harga_beli * 1.3;
+        $request->merge(['harga_jual' => $harga_jual]);
 
         $newData = [
-            'mp_p_id'        => $request->input('kode_pemda'),
-            'mp_p_nama'  => $request->input('name_pemda'),
-            'mp_p_mkk_id'        => $mp_mkk_nama,
-            'mp_p_fee'  => $request->input('biaya_admin'),
-            'mp_p_min_fee'        => $request->input('transaksi'),
-            'mp_p_pembayaran_cutoff'  => $request->input('cut_off'),
-            'mp_p_pembayaran_date'        => $request->input('date'),
-            'mp_p_status'  => $request->input('isactive'),
-            'mp_p_created_by'        => Session('user')->nama,
-            'mp_p_created_date'  => Carbon::now('Asia/Jakarta'),
+            'nama_produk'        => $request->input('name'),
+            'kategori_produk'  => $request->input('kategori'),
+            'harga_barang'  => $request->input('harga_barang'),
+            'harga_jual'        => $harga_jual,
+            'stok'  => $request->input('stok'),
+            'created_at'  => Carbon::now('Asia/Jakarta'),
         ];
-        $record = DB::table('mp_pbb_pemda')->insert($newData);
+        $record = DB::table('produk')->insert($newData);
 
-        // Berikan respons berdasarkan keberhasilan operasi
         if ($record) {
             $message    = "Berhasil menambahkan data!";
             $rc         = "0000";
@@ -95,5 +91,97 @@ class ProdukController extends Controller
         ];
 
         return response()->json($result);
+    }
+
+    public function edit(Request $request)
+    {
+        Log::info('Metode edit dipanggil');
+
+
+        $id = $request->input('account_id');
+        $harga_beli = $request->input('harga_barang');
+        $harga_jual = $harga_beli * 1.3;
+        $request->merge(['harga_jual' => $harga_jual]);
+        $updatedData = [
+            'nama_produk' => $request->input('name'),
+            'kategori_produk' => $request->input('kategori'),
+            'harga_barang' => $request->input('harga_barang'),
+            'harga_jual' => $harga_jual,
+            'stok' => $request->input('stok'),
+        ];
+        $affectedRows = DB::table('produk')
+            ->where('id', $id)
+            ->update($updatedData);
+
+        if ($affectedRows) {
+            $message = "Data berhasil diubah!";
+            $rc = "0000";
+        } else {
+            $message = "Gagal mengubah data!";
+            $rc = "0066";
+        }
+
+        $result = [
+            "rc" => $rc,
+            "message" => $message
+        ];
+
+        return response()->json($result);
+    }
+
+    public function export(Request $request)
+    {
+        $records = Produk::orderBy('created_at', 'asc');
+
+        if ($request->mProduk) {
+            $search = $request->mProduk;
+            $records->where(function ($query) use ($search) {
+                $query->where('nama_produk', 'ilike', "%$search%");
+            });
+        }
+
+        if ($request->mKategori) {
+            $records->where('kategori_produk', $request->mKategori);
+        }
+
+        $data = $records->get();
+
+        if ($data->isNotEmpty()) {
+            $export = new LaporanProduk($data);
+            return \Maatwebsite\Excel\Facades\Excel::download($export, 'laporan_produk.xlsx');
+        } else {
+            return back()->with([
+                'message' => 'Gagal melakukan export, data tidak ditemukan',
+                'alert-type' => 'danger'
+            ]);
+        }
+    }
+
+    public function show(Request $request)
+    {
+        $record = DB::table('produk')->where('id', $request->id)->first();
+        return response()->json($record);
+    }
+
+    public function delete($id)
+    {
+
+        try {
+            $record = DB::table('produk')->where('id', $id)->delete();
+            if ($record) {
+                $message = "Data berhasil dihapus!";
+                $rc = "0000";
+                $status = 200;
+            } else {
+                $message = "Gagal menghapus data !";
+                $rc = "0066";
+                $status = 500;
+            }
+            return response()->json(['rc' => $rc, 'message' => $message], $status);
+        } catch (\Exception $e) {
+            $message = "Gagal menghapus data!";
+            $rc = "0066";
+            return response()->json(['rc' => $rc, 'message' => $message], 500);
+        }
     }
 }

@@ -28,4 +28,13 @@ class LoginController extends Controller
             return redirect()->route('login')->with('error', 'Login failed. Please check your credentials.');
         }
     }
+
+    public function logout(Request $request)
+    {
+        $request->session()->flush();
+        return redirect()->route('login')->with([
+            'message'       => 'Berhasil logout',
+            'alert-type'    => 'success'
+        ]);
+    }
 }

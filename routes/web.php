@@ -23,17 +23,19 @@ Route::get('/', function () {
 
 Route::controller(LoginController::class)->group(function () {
     Route::post('/login', 'login')->name('login.process');
-    Route::get('/logout', 'logout')->name('logout');
+    Route::post('/logout', 'logout')->name('logout');
 });
 
 Route::group(['middleware' => 'checkauth'], function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 
-    Route::group(['prefix' => 'produk'], function () {
-        Route::controller(ProdukController::class)->group(function () {
-            Route::get('/', 'index')->name('produk.index');
-            Route::post('/list', 'ProdukController@list')->name('produk.list');
-            Route::post('/create', 'ProdukController@create')->name('produk.create');
-        });
+    Route::prefix('produk')->group(function () {
+        Route::get('/', [ProdukController::class, 'index'])->name('produk.index');
+        Route::post('/list', [ProdukController::class, 'list'])->name('produk.list');
+        Route::post('/create', [ProdukController::class, 'create'])->name('produk.create');
+        Route::post('/show', [ProdukController::class, 'show'])->name('produk.show');
+        Route::post('/edit', [ProdukController::class, 'edit'])->name('produk.edit');
+        Route::post('/export', [ProdukController::class, 'export'])->name('produk.export');
+        Route::delete('/delete/{id}', [ProdukController::class, 'delete'])->name('produk.delete');
     });
 });
