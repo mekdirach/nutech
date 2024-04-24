@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Validator;
 
 
 class ProdukController extends Controller
@@ -18,13 +19,18 @@ class ProdukController extends Controller
     public function index()
     {
         $pemda = produk::all();
-        return view('produk.index', compact('pemda'));
+        return view('produk.index');
+    }
+
+    public function showTambahPage()
+    {
+        return view('produk.content.tambah');
     }
 
     public function list(Request $request)
     {
         Log::info('Metode list dipanggil');
-        $query      = produk::orderBy('created_at', 'asc');
+        $query      = produk::orderBy('created_at', 'desc');
         if ($request->keyword) {
             $search = $request->keyword;
             $query->where(function ($query) use ($search) {
@@ -43,6 +49,7 @@ class ProdukController extends Controller
         foreach ($result as $row) {
             $row->id        = $row->id;
             $row->rownum    = ++$no;
+            $row->gambar = url($row->gambar);
         }
         $response = [
             "draw"              => $request->draw,
@@ -57,12 +64,19 @@ class ProdukController extends Controller
     public function create(Request $request)
     {
         Log::info('Metode create dipanggil');
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string',
             'kategori' => 'required|string',
             'harga_barang' => 'required|numeric',
-            'stok' => 'required|integer',
+            'file' => 'required|image|mimes:jpeg,png|max:100',
         ]);
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+        $file = $request->file('file');
+        $nama_file = time() . '_' . $file->getClientOriginalName();
+        $file->move(public_path('image'), $nama_file);
+
         $harga_beli = $request->input('harga_barang');
         $harga_jual = $harga_beli * 1.3;
         $request->merge(['harga_jual' => $harga_jual]);
@@ -74,6 +88,7 @@ class ProdukController extends Controller
             'harga_jual'        => $harga_jual,
             'stok'  => $request->input('stok'),
             'created_at'  => Carbon::now('Asia/Jakarta'),
+            'gambar' => 'image/' . $nama_file,
         ];
         $record = DB::table('produk')->insert($newData);
 
@@ -104,7 +119,7 @@ class ProdukController extends Controller
         $request->merge(['harga_jual' => $harga_jual]);
         $updatedData = [
             'nama_produk' => $request->input('name'),
-            'kategori_produk' => $request->input('kategori'),
+            'kategori_produk' => $request->input('kategori_'),
             'harga_barang' => $request->input('harga_barang'),
             'harga_jual' => $harga_jual,
             'stok' => $request->input('stok'),

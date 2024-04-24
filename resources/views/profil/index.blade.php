@@ -3,10 +3,10 @@
     <div class="container-fluid">
 
         <h4 class="font-weight-bold py-3 mb-4">
-            <span class="text-muted font-weight-light">Data > </span> Produk
+            <span class="text-muted font-weight-light">Data > </span> profil
         </h4>
         <h4 class="media align-items-center font-weight-bold py-3 mb-4">
-            @include('produk.content.list')
+            @include('profil.content.list')
 
         </h4>
     </div>

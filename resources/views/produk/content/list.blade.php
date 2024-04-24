@@ -16,7 +16,8 @@
                         <div class="input-group">
                             <select class="form-select" name="kategori" id="kategori">
                                 <option selected value="">- Pilih -</option>
-                                <option value="alat olahraga">alat olahraga</option>
+                                <option value="alat olahraga">Alat Olahraga</option>
+                                <option value="alat musik">Alat Musik</option>
                             </select>
                         </div>
                     </div>
@@ -33,13 +34,12 @@
                     </div>
                 </form>
             </div>
-
             <div class="col-md-4 text-md-end">
                 <button class="btn btn-success" type="button" id="btnExport"><i class="fas fa-share-square"></i>
                     Export</button>
-                <button class="btn btn-primary" type="button" onclick="modalTambah()">
+                <a href="{{ route('produk.tambah') }}" class="btn btn-primary">
                     <i class="ion ion-md-add-circle-outline"></i> Tambah Data
-                </button>
+                </a>
             </div>
         </div>
     </div>
@@ -73,9 +73,10 @@
                     <div class="form-group col">
                         <label class="form-label">Kategori Produk</label>
                         <div class="input-group">
-                            <select class="form-select" name="kategori" id="kategori">
+                            <select class="form-select" name="kategori_" id="kategori_">
                                 <option selected value="">- Pilih -</option>
-                                <option value="alat olahraga">alat olahraga</option>
+                                <option value="alat olahraga">Alat Olahraga</option>
+                                <option value="alat musik">Alat Musik</option>
                             </select>
                             <div class="invalid-feedback" id="kategoriError"></div>
                         </div>
@@ -108,11 +109,10 @@
 
 <div class="modal fade" id="modals-default">
     <div class="modal-dialog">
-        <form action="{{ route('produk.export') }}" method="POST" class="modal-content">
+        <form action="{{ route('produk.export') }}" method="POST" class="modal-content" id="exportForm">
             @csrf
             <div class="modal-header">
-                <h5 class="modal-title custom-title">Export
-                </h5>
+                <h5 class="modal-title custom-title">Export</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">×</button>
             </div>
             <div class="modal-body">
@@ -147,11 +147,13 @@
                 loadData();
             });
 
-            $('#btnExport').on('click', function() {
-                $('#modals-default').modal('show')
-                $('#mProduk').val($('#inputProduk').val())
-                $('#mKategori').val($('#kategori').val())
-            })
+            const exportForm = document.getElementById('exportForm');
+
+            exportForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                loadData();
+                $('#modals-default').modal('hide');
+            });
 
             $('#btnReset').on('click', function() {
                 $("#inputProduk").val('');
@@ -189,8 +191,6 @@
                 var url = '';
                 if (edit) {
                     url = "{{ route('produk.edit') }}";
-                } else {
-                    url = "{{ route('produk.create') }}";
                 }
 
                 $.ajax({
@@ -224,7 +224,6 @@
         function loadData() {
             var keyword = $('#inputProduk').val();
             var produk = $('#kategori').val();
-            console.log(produk);
             $('.datatables-demos').DataTable({
                 serverSide: true,
                 paging: true,
@@ -258,6 +257,15 @@
                         mRender: function(data, type, row) {
                             return row.rownum;
                         }
+                    },
+                    {
+                        title: "Gambar",
+                        width: "5%",
+                        data: function(row) {
+                            return '<img src="' + row.gambar + '" width="50px" height="50px">';
+                        },
+                        orderable: false,
+                        searchable: false
                     },
                     {
                         title: "Nama Produk",
@@ -349,7 +357,7 @@
                     $('.custom-title').html('Edit Account Type');
                     $('#account_id').val(data.id);
                     $('#name').val(data.nama_produk);
-                    $('#kategori').val(data.kategori_produk);
+                    $('#kategori_').val(data.kategori_produk);
                     $('#harga_barang').val(data.harga_barang);
                     $('#harga_jual').val(data.harga_jual);
                     $('#stok').val(data.stok);

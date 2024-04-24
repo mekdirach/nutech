@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProdukController;
+use App\Http\Controllers\ProfilController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -37,5 +38,9 @@ Route::group(['middleware' => 'checkauth'], function () {
         Route::post('/edit', [ProdukController::class, 'edit'])->name('produk.edit');
         Route::post('/export', [ProdukController::class, 'export'])->name('produk.export');
         Route::delete('/delete/{id}', [ProdukController::class, 'delete'])->name('produk.delete');
+        Route::get('/tambah', [ProdukController::class, 'showTambahPage'])->name('produk.tambah');
+    });
+    Route::prefix('profil')->group(function () {
+        Route::get('/', [ProfilController::class, 'index'])->name('profil.index');
     });
 });

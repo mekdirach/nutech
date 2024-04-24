@@ -21,7 +21,8 @@ function getDummyUim($data)
         "namaFungsi" => "CS",
         "kodePenempatan" => "0114",
         "namaPenempatan" => "SUKAJADI",
-        "id" => "11290"
+        "id" => "11290",
+        "posisi" => "FullStack Developer"
     ];
 
     $Y136 = [
@@ -40,7 +41,8 @@ function getDummyUim($data)
         "namaFungsi" => "Divisi IT",
         "kodePenempatan" => "D440",
         "namaPenempatan" => "DIVISI INFORMATION TECHNOLOGY",
-        "id" => "16118"
+        "id" => "16118",
+        "posisi" => "Web Proggramming"
     ];
 
     $J570 = [
@@ -59,7 +61,8 @@ function getDummyUim($data)
         "namaFungsi" => "Maker DJK",
         "kodePenempatan" => "D156",
         "namaPenempatan" => "DIVISI DANA & JASA KONSUMER",
-        "id" => "15113"
+        "id" => "15113",
+        "posisi" => "Web Developer"
     ];
 
     $user = [
