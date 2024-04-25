@@ -18,7 +18,6 @@ class ProdukController extends Controller
 {
     public function index()
     {
-        $pemda = produk::all();
         return view('produk.index');
     }
 
@@ -29,7 +28,7 @@ class ProdukController extends Controller
 
     public function list(Request $request)
     {
-        Log::info('Metode list dipanggil');
+
         $query      = produk::orderBy('created_at', 'desc');
         if ($request->keyword) {
             $search = $request->keyword;
@@ -57,7 +56,7 @@ class ProdukController extends Controller
             "recordsFiltered"   => $resCount,
             "data"              => $result
         ];
-
+        Log::info('Metode list dipanggil');
         return response()->json($response);
     }
 
